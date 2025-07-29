@@ -64,11 +64,11 @@ let bibleData={};
 let GEMINI_KEY = localStorage.getItem("geminiKey") || "";
 
 // ✅ 自動載入已儲存的 Key
-if(GEMINI_KEY){ apiKeyInput.value="AIzaSyBC1BUs6jNv_ZeuXRQijZZtMB_LCyIlFiY"; }
+if(GEMINI_KEY){ apiKeyInput.value="********"; }
 
 // ✅ 儲存 API Key
 saveKeyBtn.onclick=()=>{
-  if(apiKeyInput.value && apiKeyInput.value!=="AIzaSyBC1BUs6jNv_ZeuXRQijZZtMB_LCyIlFiY"){
+  if(apiKeyInput.value && apiKeyInput.value!=="********"){
     localStorage.setItem("geminiKey", apiKeyInput.value);
     GEMINI_KEY=apiKeyInput.value;
     alert("✅ API Key 已儲存！");
