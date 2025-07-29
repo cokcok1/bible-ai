@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>手機聖經AI解釋器</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background:#f8f8f8; }
+    .no-scrollbar::-webkit-scrollbar { display:none; }
+  </style>
+</head>
+<body class="flex flex-col h-screen">
+<div class="flex-1 flex flex-col overflow-hidden">
+  
+  <!-- Bible Section -->
+  <div class="bg-white p-4 shadow-md rounded-b-lg flex-shrink-0">
+    <h1 class="text-2xl font-bold text-center mb-4 text-blue-700">聖經閱讀器</h1>
+    <div id="loadError" class="hidden bg-red-100 text-red-700 p-2 mb-2 rounded"></div>
+
+    <div class="flex gap-3 mb-3">
+      <select id="bookSelect" class="flex-1 p-3 border rounded-lg shadow-sm"></select>
+      <select id="chapterSelect" class="flex-1 p-3 border rounded-lg shadow-sm" disabled></select>
+    </div>
+
+    <div class="flex justify-between mb-2">
+      <button id="prevChapter" class="bg-gray-300 px-3 py-1 rounded disabled:opacity-40">上一章</button>
+      <button id="nextChapter" class="bg-gray-300 px-3 py-1 rounded disabled:opacity-40">下一章</button>
+    </div>
+
+    <div id="bibleContent" class="bg-gray-50 p-4 rounded-lg shadow-inner overflow-y-auto no-scrollbar text-lg leading-relaxed" style="max-height:40vh;">
+      請選擇書卷和章節來閱讀聖經。
+    </div>
+  </div>
+
+  <!-- AI Section -->
+  <div class="flex-1 flex flex-col bg-gray-100 p-4 mt-4 rounded-t-lg shadow-md overflow-hidden">
+    <h2 class="text-xl font-bold text-center mb-4 text-green-700">AI 聖經解釋</h2>
+    <button id="explainButton" class="mx-auto mb-3 bg-gradient-to-r from-green-500 to-green-700 text-white px-6 py-3 rounded-full shadow" disabled>解釋這一段聖經</button>
+    <div id="aiOutput" class="flex-1 bg-white p-4 rounded-lg shadow-inner overflow-y-auto no-scrollbar text-base"></div>
+    <div id="loadingIndicator" class="hidden text-center mt-3 text-blue-600 font-medium">AI 正在思考中...</div>
+  </div>
+</div>
+
+<script type="module">
+const bookSelect=document.getElementById('bookSelect');
+const chapterSelect=document.getElementById('chapterSelect');
+const bibleContentDiv=document.getElementById('bibleContent');
+const aiOutputDiv=document.getElementById('aiOutput');
+const explainButton=document.getElementById('explainButton');
+const loading=document.getElementById('loadingIndicator');
+const prevBtn=document.getElementById('prevChapter');
+const nextBtn=document.getElementById('nextChapter');
+const loadError=document.getElementById('loadError');
+let bibleData={};
+
+// 解析聖經文字
+function parseBible(text){
+  const lines=text.split('\n');
+  const data={};
+  lines.forEach(l=>{
+    const m=l.match(/^(.+?)\s(\d+):(\d+)\s(.+)$/);
+    if(m){
+      const[_,book,ch,vs,ct]=m;
+      data[book]=data[book]||{};
+      data[book][ch]=data[book][ch]||[];
+      data[book][ch].push(`${vs} ${ct}`);
+    }
+  });
+  return data;
+}
+
+// 載入聖經
+async function loadBible(){
+  try{
+    const res=await fetch('chinese_union_trad_trad.txt');
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const raw=await res.text();
+    bibleData=parseBible(raw);
+
+    if(Object.keys(bibleData).length===0) throw new Error("聖經檔案格式錯誤或為空");
+
+    for(const b in bibleData){
+      let o=document.createElement('option');
+      o.value=b;o.textContent=b;
+      bookSelect.appendChild(o);
+    }
+  }catch(e){
+    loadError.textContent="❌ 聖經載入失敗："+e.message+"，請確保檔案存在並使用伺服器開啟網站。";
+    loadError.classList.remove('hidden');
+  }
+}
+loadBible();
+
+// 選擇書卷
+bookSelect.addEventListener('change',()=>{
+  const b=bookSelect.value;
+  chapterSelect.innerHTML='<option>選擇章節</option>';
+  if(!b){chapterSelect.disabled=true;return;}
+  chapterSelect.disabled=false;
+  Object.keys(bibleData[b]).sort((a,b)=>a-b).forEach(ch=>{
+    let o=document.createElement('option');
+    o.value=ch;o.textContent=`第${ch}章`;
+    chapterSelect.appendChild(o);
+  });
+});
+
+// 顯示章節
+chapterSelect.addEventListener('change',()=>showChapter());
+function showChapter(){
+  const b=bookSelect.value;const ch=chapterSelect.value;
+  if(!b||!ch){bibleContentDiv.textContent="請選擇書卷和章節";return;}
+  bibleContentDiv.innerHTML=bibleData[b][ch].map(v=>`<p>${v}</p>`).join('');
+  explainButton.disabled=false;
+  prevBtn.disabled=!bibleData[b][parseInt(ch)-1];
+  nextBtn.disabled=!bibleData[b][parseInt(ch)+1];
+}
+prevBtn.onclick=()=>{chapterSelect.value=parseInt(chapterSelect.value)-1;showChapter();}
+nextBtn.onclick=()=>{chapterSelect.value=parseInt(chapterSelect.value)+1;showChapter();}
+
+// AI 解釋
+explainButton.onclick=async()=>{
+  const b=bookSelect.value;const ch=chapterSelect.value;
+  const passage=bibleContentDiv.innerText;if(!b||!ch)return;
+  loading.classList.remove('hidden');aiOutputDiv.textContent='';
+  try{
+    const prompt=`請用中文（繁體）解釋這段聖經章節：${b} 第${ch}章\\n${passage}`;
+    const payload={model:"gpt-4o-mini",messages:[{role:"user",content:prompt}]};
+    const res=await fetch("https://api.openai.com/v1/chat/completions",{
+      method:"POST",
+      headers:{"Authorization":"Bearer YOUR_API_KEY","Content-Type":"application/json"},
+      body:JSON.stringify(payload)
+    });
+    const data=await res.json();
+    aiOutputDiv.innerHTML=data.choices[0].message.content.replace(/\n/g,'<br>');
+  }catch(e){
+    aiOutputDiv.textContent="AI 解釋失敗："+e;
+  }
+  loading.classList.add('hidden');
+};
+</script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js');}</script>
+</body>
+</html>
