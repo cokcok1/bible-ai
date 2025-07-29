@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>手機聖經AI解釋器（修正版）</title>
+  <title>📖 聖經 AI 解釋 (Gemini 版)</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#2563eb">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -14,10 +14,10 @@
 </head>
 <body class="flex flex-col h-screen">
 <div class="flex-1 flex flex-col overflow-hidden">
-  
+
   <!-- Bible Section -->
   <div class="bg-white p-4 shadow-md rounded-b-lg flex-shrink-0">
-    <h1 class="text-2xl font-bold text-center mb-4 text-blue-700">聖經閱讀器</h1>
+    <h1 class="text-2xl font-bold text-center mb-4 text-blue-700">📖 聖經閱讀器 + Gemini AI</h1>
     <div id="loadError" class="hidden bg-red-100 text-red-700 p-2 mb-2 rounded"></div>
 
     <div class="flex gap-3 mb-3">
@@ -37,10 +37,14 @@
 
   <!-- AI Section -->
   <div class="flex-1 flex flex-col bg-gray-100 p-4 mt-4 rounded-t-lg shadow-md overflow-hidden">
-    <h2 class="text-xl font-bold text-center mb-4 text-green-700">AI 聖經解釋</h2>
+    <h2 class="text-xl font-bold text-center mb-4 text-green-700">🤖 AI 聖經解釋 (Google Gemini)</h2>
+
+    <input id="apiKeyInput" type="password" placeholder="🔑 輸入你的 Gemini API Key" class="w-full mb-3 p-2 border rounded">
+    <button id="saveKeyBtn" class="bg-blue-600 text-white px-4 py-2 mb-4 rounded">💾 儲存 API Key</button>
+
     <button id="explainButton" class="mx-auto mb-3 bg-gradient-to-r from-green-500 to-green-700 text-white px-6 py-3 rounded-full shadow" disabled>解釋這一段聖經</button>
     <div id="aiOutput" class="flex-1 bg-white p-4 rounded-lg shadow-inner overflow-y-auto no-scrollbar text-base"></div>
-    <div id="loadingIndicator" class="hidden text-center mt-3 text-blue-600 font-medium">AI 正在思考中...</div>
+    <div id="loadingIndicator" class="hidden text-center mt-3 text-blue-600 font-medium">🤔 AI 正在思考中...</div>
   </div>
 </div>
 
@@ -54,9 +58,24 @@ const loading=document.getElementById('loadingIndicator');
 const prevBtn=document.getElementById('prevChapter');
 const nextBtn=document.getElementById('nextChapter');
 const loadError=document.getElementById('loadError');
+const apiKeyInput=document.getElementById('apiKeyInput');
+const saveKeyBtn=document.getElementById('saveKeyBtn');
 let bibleData={};
+let GEMINI_KEY = localStorage.getItem("geminiKey") || "";
 
-// ✅ TXT 解析器（允許創世記1:1 或 創世記 1:1）
+// ✅ 自動載入已儲存的 Key
+if(GEMINI_KEY){ apiKeyInput.value="********"; }
+
+// ✅ 儲存 API Key
+saveKeyBtn.onclick=()=>{
+  if(apiKeyInput.value && apiKeyInput.value!=="********"){
+    localStorage.setItem("geminiKey", apiKeyInput.value);
+    GEMINI_KEY=apiKeyInput.value;
+    alert("✅ API Key 已儲存！");
+  }
+};
+
+// ✅ 解析 TXT（兼容創世記1:1）
 function parseBibleTXT(text){
   const lines=text.split('\n');
   const data={};
@@ -72,35 +91,18 @@ function parseBibleTXT(text){
   return data;
 }
 
-// ✅ 嘗試載入 JSON → 如果失敗 → 退回 TXT
+// ✅ 載入 TXT
 async function loadBible(){
   try{
-    const jsonRes=await fetch('bible.json');
-    if(jsonRes.ok){
-      bibleData=await jsonRes.json();
-      initBooks();
-      return;
-    }
-  }catch(e){console.warn("JSON not found, fallback to TXT");}
-
-  try{
-    const txtRes=await fetch('chinese_union_trad_trad.txt');
-    if(!txtRes.ok) throw new Error(`HTTP ${txtRes.status}`);
-    const raw=await txtRes.text();
+    const res=await fetch('chinese_union_trad_trad.txt');
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const raw=await res.text();
     bibleData=parseBibleTXT(raw);
     if(Object.keys(bibleData).length===0) throw new Error("TXT 格式錯誤或為空");
-    initBooks();
+    for(const b in bibleData){let o=document.createElement('option');o.value=b;o.textContent=b;bookSelect.appendChild(o);}
   }catch(e){
     loadError.textContent="❌ 聖經載入失敗："+e.message;
     loadError.classList.remove('hidden');
-  }
-}
-
-function initBooks(){
-  for(const b in bibleData){
-    let o=document.createElement('option');
-    o.value=b;o.textContent=b;
-    bookSelect.appendChild(o);
   }
 }
 loadBible();
@@ -131,21 +133,19 @@ function showChapter(){
 prevBtn.onclick=()=>{chapterSelect.value=parseInt(chapterSelect.value)-1;showChapter();}
 nextBtn.onclick=()=>{chapterSelect.value=parseInt(chapterSelect.value)+1;showChapter();}
 
-// ✅ AI 解釋
+// ✅ AI 解釋（Gemini）
 explainButton.onclick=async()=>{
+  if(!GEMINI_KEY){alert("⚠️ 請先輸入你的 Gemini API Key！");return;}
   const b=bookSelect.value;const ch=chapterSelect.value;
   const passage=bibleContentDiv.innerText;if(!b||!ch)return;
   loading.classList.remove('hidden');aiOutputDiv.textContent='';
+
   try{
-    const prompt=`請用中文（繁體）解釋這段聖經章節：${b} 第${ch}章\n${passage}`;
-    const payload={model:"gpt-4o-mini",messages:[{role:"user",content:prompt}]};
-    const res=await fetch("https://api.openai.com/v1/chat/completions",{
-      method:"POST",
-      headers:{"Authorization":"Bearer YOUR_API_KEY","Content-Type":"application/json"},
-      body:JSON.stringify(payload)
-    });
+    const endpoint=`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_KEY}`;
+    const payload={contents:[{parts:[{text:`請用中文（繁體）詳細解釋聖經 ${b} 第${ch}章\n${passage}`}]}]};
+    const res=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
     const data=await res.json();
-    aiOutputDiv.innerHTML=data.choices[0].message.content.replace(/\n/g,'<br>');
+    aiOutputDiv.innerHTML=data?.candidates?.[0]?.content?.parts?.[0]?.text?.replace(/\n/g,'<br>') || "⚠️ 沒有回覆";
   }catch(e){
     aiOutputDiv.textContent="AI 解釋失敗："+e;
   }
