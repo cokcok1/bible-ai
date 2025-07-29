@@ -21,17 +21,21 @@
     <div id="loadError" class="hidden bg-red-100 text-red-700 p-2 mb-2 rounded"></div>
 
     <div class="flex gap-3 mb-3">
-      <select id="bookSelect" class="flex-1 p-3 border rounded-lg shadow-sm"></select>
-      <select id="chapterSelect" class="flex-1 p-3 border rounded-lg shadow-sm" disabled></select>
+      <select id="bookSelect" class="flex-1 p-3 border rounded-lg shadow-sm">
+        <option value="">請選擇書卷</option>
+      </select>
+      <select id="chapterSelect" class="flex-1 p-3 border rounded-lg shadow-sm" disabled>
+        <option value="">請選擇章節</option>
+      </select>
     </div>
 
     <div class="flex justify-between mb-2">
-      <button id="prevChapter" class="bg-gray-300 px-3 py-1 rounded disabled:opacity-40">上一章</button>
-      <button id="nextChapter" class="bg-gray-300 px-3 py-1 rounded disabled:opacity-40">下一章</button>
+      <button id="prevChapter" class="bg-gray-300 px-3 py-1 rounded disabled:opacity-40" disabled>上一章</button>
+      <button id="nextChapter" class="bg-gray-300 px-3 py-1 rounded disabled:opacity-40" disabled>下一章</button>
     </div>
 
     <div id="bibleContent" class="bg-gray-50 p-4 rounded-lg shadow-inner overflow-y-auto no-scrollbar text-lg leading-relaxed" style="max-height:40vh;">
-      📖 請選擇書卷和章節來閱讀聖經。
+      📖 請先選擇書卷和章節來閱讀聖經。
     </div>
   </div>
 
@@ -110,7 +114,9 @@ loadBible();
 // ✅ 選書卷
 bookSelect.addEventListener('change',()=>{
   const b=bookSelect.value;
-  chapterSelect.innerHTML='<option>選擇章節</option>';
+  chapterSelect.innerHTML='<option value="">請選擇章節</option>';
+  bibleContentDiv.textContent="📖 請選擇章節";
+  explainButton.disabled=true;
   if(!b){chapterSelect.disabled=true;return;}
   chapterSelect.disabled=false;
   Object.keys(bibleData[b]).forEach(ch=>{
@@ -124,14 +130,18 @@ bookSelect.addEventListener('change',()=>{
 chapterSelect.addEventListener('change',()=>showChapter());
 function showChapter(){
   const b=bookSelect.value;const ch=chapterSelect.value;
-  if(!b||!ch){bibleContentDiv.textContent="請選擇書卷和章節";return;}
+  if(!b||!ch){
+    bibleContentDiv.textContent="📖 請選擇書卷和章節";
+    explainButton.disabled=true;
+    return;
+  }
   bibleContentDiv.innerHTML=bibleData[b][ch].map(v=>`<p>${v}</p>`).join('');
   explainButton.disabled=false;
   prevBtn.disabled=!bibleData[b][parseInt(ch)-1];
   nextBtn.disabled=!bibleData[b][parseInt(ch)+1];
 }
-prevBtn.onclick=()=>{chapterSelect.value=parseInt(chapterSelect.value)-1;showChapter();}
-nextBtn.onclick=()=>{chapterSelect.value=parseInt(chapterSelect.value)+1;showChapter();}
+prevBtn.onclick=()=>{if(chapterSelect.value){chapterSelect.value=parseInt(chapterSelect.value)-1;showChapter();}};
+nextBtn.onclick=()=>{if(chapterSelect.value){chapterSelect.value=parseInt(chapterSelect.value)+1;showChapter();}};
 
 // ✅ AI 解釋（Gemini）
 explainButton.onclick=async()=>{
