@@ -1,3 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>手機聖經AI解釋器（修正版）</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background:#f8f8f8; }
+    .no-scrollbar::-webkit-scrollbar { display:none; }
+  </style>
+</head>
+<body class="flex flex-col h-screen">
+<div class="flex-1 flex flex-col overflow-hidden">
+  
+  <!-- Bible Section -->
+  <div class="bg-white p-4 shadow-md rounded-b-lg flex-shrink-0">
+    <h1 class="text-2xl font-bold text-center mb-4 text-blue-700">聖經閱讀器</h1>
+    <div id="loadError" class="hidden bg-red-100 text-red-700 p-2 mb-2 rounded"></div>
+
+    <div class="flex gap-3 mb-3">
+      <select id="bookSelect" class="flex-1 p-3 border rounded-lg shadow-sm"></select>
+      <select id="chapterSelect" class="flex-1 p-3 border rounded-lg shadow-sm" disabled></select>
+    </div>
+
+    <div class="flex justify-between mb-2">
+      <button id="prevChapter" class="bg-gray-300 px-3 py-1 rounded disabled:opacity-40">上一章</button>
+      <button id="nextChapter" class="bg-gray-300 px-3 py-1 rounded disabled:opacity-40">下一章</button>
+    </div>
+
+    <div id="bibleContent" class="bg-gray-50 p-4 rounded-lg shadow-inner overflow-y-auto no-scrollbar text-lg leading-relaxed" style="max-height:40vh;">
+      📖 請選擇書卷和章節來閱讀聖經。
+    </div>
+  </div>
+
+  <!-- AI Section -->
+  <div class="flex-1 flex flex-col bg-gray-100 p-4 mt-4 rounded-t-lg shadow-md overflow-hidden">
+    <h2 class="text-xl font-bold text-center mb-4 text-green-700">AI 聖經解釋</h2>
+    <button id="explainButton" class="mx-auto mb-3 bg-gradient-to-r from-green-500 to-green-700 text-white px-6 py-3 rounded-full shadow" disabled>解釋這一段聖經</button>
+    <div id="aiOutput" class="flex-1 bg-white p-4 rounded-lg shadow-inner overflow-y-auto no-scrollbar text-base"></div>
+    <div id="loadingIndicator" class="hidden text-center mt-3 text-blue-600 font-medium">AI 正在思考中...</div>
+  </div>
+</div>
+
 <script type="module">
 const bookSelect=document.getElementById('bookSelect');
 const chapterSelect=document.getElementById('chapterSelect');
@@ -10,26 +56,56 @@ const nextBtn=document.getElementById('nextChapter');
 const loadError=document.getElementById('loadError');
 let bibleData={};
 
-// 🚀 直接載入 JSON
+// ✅ TXT 解析器（允許創世記1:1 或 創世記 1:1）
+function parseBibleTXT(text){
+  const lines=text.split('\n');
+  const data={};
+  lines.forEach(l=>{
+    const m=l.match(/^(.+?)(?:\s)?(\d+):(\d+)\s(.+)$/);
+    if(m){
+      const[_,book,ch,vs,ct]=m;
+      data[book]=data[book]||{};
+      data[book][ch]=data[book][ch]||[];
+      data[book][ch].push(`${vs} ${ct}`);
+    }
+  });
+  return data;
+}
+
+// ✅ 嘗試載入 JSON → 如果失敗 → 退回 TXT
 async function loadBible(){
   try{
-    const res=await fetch('bible.json');
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    bibleData=await res.json();
-
-    for(const b in bibleData){
-      let o=document.createElement('option');
-      o.value=b;o.textContent=b;
-      bookSelect.appendChild(o);
+    const jsonRes=await fetch('bible.json');
+    if(jsonRes.ok){
+      bibleData=await jsonRes.json();
+      initBooks();
+      return;
     }
+  }catch(e){console.warn("JSON not found, fallback to TXT");}
+
+  try{
+    const txtRes=await fetch('chinese_union_trad_trad.txt');
+    if(!txtRes.ok) throw new Error(`HTTP ${txtRes.status}`);
+    const raw=await txtRes.text();
+    bibleData=parseBibleTXT(raw);
+    if(Object.keys(bibleData).length===0) throw new Error("TXT 格式錯誤或為空");
+    initBooks();
   }catch(e){
-    loadError.textContent="❌ 聖經載入失敗："+e.message+"，請確認 bible.json 存在於同一資料夾。";
+    loadError.textContent="❌ 聖經載入失敗："+e.message;
     loadError.classList.remove('hidden');
+  }
+}
+
+function initBooks(){
+  for(const b in bibleData){
+    let o=document.createElement('option');
+    o.value=b;o.textContent=b;
+    bookSelect.appendChild(o);
   }
 }
 loadBible();
 
-// 選書卷
+// ✅ 選書卷
 bookSelect.addEventListener('change',()=>{
   const b=bookSelect.value;
   chapterSelect.innerHTML='<option>選擇章節</option>';
@@ -42,7 +118,7 @@ bookSelect.addEventListener('change',()=>{
   });
 });
 
-// 顯示章節
+// ✅ 顯示章節
 chapterSelect.addEventListener('change',()=>showChapter());
 function showChapter(){
   const b=bookSelect.value;const ch=chapterSelect.value;
@@ -55,7 +131,7 @@ function showChapter(){
 prevBtn.onclick=()=>{chapterSelect.value=parseInt(chapterSelect.value)-1;showChapter();}
 nextBtn.onclick=()=>{chapterSelect.value=parseInt(chapterSelect.value)+1;showChapter();}
 
-// AI 解釋（保持原邏輯）
+// ✅ AI 解釋
 explainButton.onclick=async()=>{
   const b=bookSelect.value;const ch=chapterSelect.value;
   const passage=bibleContentDiv.innerText;if(!b||!ch)return;
@@ -76,3 +152,6 @@ explainButton.onclick=async()=>{
   loading.classList.add('hidden');
 };
 </script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js');}</script>
+</body>
+</html>
