@@ -143,25 +143,57 @@ function showChapter(){
 prevBtn.onclick=()=>{if(chapterSelect.value){chapterSelect.value=parseInt(chapterSelect.value)-1;showChapter();}};
 nextBtn.onclick=()=>{if(chapterSelect.value){chapterSelect.value=parseInt(chapterSelect.value)+1;showChapter();}};
 
-// ✅ AI 解釋（Gemini）
-explainButton.onclick=async()=>{
-  if(!GEMINI_KEY){alert("⚠️ 請先輸入你的 Gemini API Key！");return;}
-  const b=bookSelect.value;const ch=chapterSelect.value;
-  const passage=bibleContentDiv.innerText;if(!b||!ch)return;
-  loading.classList.remove('hidden');aiOutputDiv.textContent='';
-
-  try{
-    const endpoint=`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_KEY}`;
-    const payload={contents:[{parts:[{text:`請用中文（繁體）詳細解釋聖經 ${b} 第${ch}章\n${passage}`}]}]};
-    const res=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-    const data=await res.json();
-    aiOutputDiv.innerHTML=data?.candidates?.[0]?.content?.parts?.[0]?.text?.replace(/\n/g,'<br>') || "⚠️ 沒有回覆";
-  }catch(e){
-    aiOutputDiv.textContent="AI 解釋失敗："+e;
+// ✅ Gemini AI 解釋（符合最新 API）
+explainButton.onclick = async () => {
+  if (!GEMINI_KEY) {
+    alert("⚠️ 請先輸入你的 Gemini API Key！");
+    return;
   }
-  loading.classList.add('hidden');
+  const b = bookSelect.value;
+  const ch = chapterSelect.value;
+  const passage = bibleContentDiv.innerText;
+  if (!b || !ch) return;
+
+  loading.classList.remove("hidden");
+  aiOutputDiv.textContent = "";
+
+  try {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_KEY}`;
+    const payload = {
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: `請用中文（繁體）詳細解釋聖經 ${b} 第${ch}章：\n${passage}` }
+          ]
+        }
+      ]
+    };
+
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if (data.candidates && data.candidates.length > 0) {
+      aiOutputDiv.innerHTML = data.candidates[0].content.parts
+        .map(p => p.text)
+        .join("\n")
+        .replace(/\n/g, "<br>");
+    } else {
+      aiOutputDiv.textContent = "⚠️ AI 沒有提供回覆，請檢查 API Key 或稍後再試。";
+    }
+  } catch (e) {
+    aiOutputDiv.textContent = "❌ AI 解釋失敗：" + e;
+  }
+
+  loading.classList.add("hidden");
 };
 </script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js');}</script>
 </body>
 </html>
+
