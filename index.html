@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>📖 聖經 AI 解釋 (Gemini + 節選擇)</title>
+  <title>📖 聖經 AI 解釋 (Gemini)</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#2563eb">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -19,7 +19,7 @@
 
   <!-- Bible Section -->
   <div class="bg-white p-4 shadow-md rounded-b-lg flex-shrink-0">
-    <h1 class="text-2xl font-bold text-center mb-4 text-blue-700">📖 聖經閱讀器 + Gemini AI</h1>
+    <h1 class="text-2xl font-bold text-center mb-4 text-blue-700">📖 聖經閱讀器 + Gemini AI 300725 1209</h1>
     <div id="loadError" class="hidden bg-red-100 text-red-700 p-2 mb-2 rounded"></div>
 
     <div class="flex gap-3 mb-3">
@@ -166,7 +166,7 @@ explainButton.onclick = async () => {
     const target = v ? `第${v}節` : `第${ch}章`;
     const payload = {
       contents: [
-        { parts: [{ text: `請用中文（繁體）詳細解釋聖經 ${b} ${target}，並包含逐節解釋、背景資料、引用及出處：\n${passage}` }] }
+        { parts: [{ text: `請用中文（繁體）詳細解釋聖經 ${b} ${target}，並包含解釋、經文結構與主題、背景資料、引用及出處應用、反思與默想問題：\n${passage}` }] }
       ]
     };
 
