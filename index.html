@@ -162,7 +162,7 @@ explainButton.onclick = async () => {
   aiOutputDiv.textContent = "";
 
   try {
-    const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
+    const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
     const target = v ? `第${v}節` : `第${ch}章`;
     const payload = {
       contents: [
