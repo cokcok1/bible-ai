@@ -162,11 +162,11 @@ explainButton.onclick = async () => {
   aiOutputDiv.textContent = "";
 
   try {
-    const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
+    const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
     const target = v ? `第${v}節` : `第${ch}章`;
     const payload = {
       contents: [
-        { parts: [{ text: `請用中文（繁體）詳細解釋聖經 ${b} ${target}，並包含逐節解釋、背景資料、交叉引用及出處：\n${passage}` }] }
+        { parts: [{ text: `請用中文（繁體）詳細解釋聖經 ${b} ${target}，並包含逐節解釋、背景資料、引用及出處：\n${passage}` }] }
       ]
     };
 
