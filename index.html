@@ -67,7 +67,7 @@
 </div>
 
 <!-- ✅ 版本號 -->
-<div id="versionTag">AI解釋內容只供參考 300725 1356</div>
+<div id="versionTag">AI解釋內容只供參考 300725 1512</div>
 
 <script type="module">
 // ✅ API Key
@@ -183,7 +183,7 @@ explainButton.onclick = async () => {
     const target = v ? `第${v}節` : `第${ch}章`;
     const payload = {
       contents: [
-        { parts: [{ text: `請用中文（繁體）詳細解釋聖經 ${b} ${target}，包含解釋、經文主題、背景資料、交叉引用、出處與反思問題：\n${passage}` }] }
+        { parts: [{ text: `請用中文（繁體）詳細解釋聖經 ${b} ${target}，包含解釋、經文主題、背景資料與反思：\n${passage}` }] }
       ]
     };
 
