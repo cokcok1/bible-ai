@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>📖 聖經 AI 解釋 (Gemini 版)</title>
+  <title>📖 聖經 AI 解釋 (Gemini 直連版)</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#2563eb">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -41,10 +41,7 @@
 
   <!-- AI Section -->
   <div class="flex-1 flex flex-col bg-gray-100 p-4 mt-4 rounded-t-lg shadow-md overflow-hidden">
-    <h2 class="text-xl font-bold text-center mb-4 text-green-700">🤖 AI 聖經解釋 (Google Gemini)</h2>
-
-    <input id="apiKeyInput" type="password" placeholder="🔑 輸入你的 Gemini API Key" class="w-full mb-3 p-2 border rounded">
-    <button id="saveKeyBtn" class="bg-blue-600 text-white px-4 py-2 mb-4 rounded">💾 儲存 API Key</button>
+    <h2 class="text-xl font-bold text-center mb-4 text-green-700">🤖 AI 聖經解釋 (Gemini 1.5 Flash)</h2>
 
     <button id="explainButton" class="mx-auto mb-3 bg-gradient-to-r from-green-500 to-green-700 text-white px-6 py-3 rounded-full shadow" disabled>解釋這一段聖經</button>
     <div id="aiOutput" class="flex-1 bg-white p-4 rounded-lg shadow-inner overflow-y-auto no-scrollbar text-base"></div>
@@ -53,6 +50,9 @@
 </div>
 
 <script type="module">
+// ✅ 直接寫死 API Key（⚠️ 請換成你的 Key）
+const GEMINI_KEY = "AIzaSyDFax8nR7DIGabANIO8jzwHVg_9MbX_9_0";
+
 const bookSelect=document.getElementById('bookSelect');
 const chapterSelect=document.getElementById('chapterSelect');
 const bibleContentDiv=document.getElementById('bibleContent');
@@ -62,22 +62,7 @@ const loading=document.getElementById('loadingIndicator');
 const prevBtn=document.getElementById('prevChapter');
 const nextBtn=document.getElementById('nextChapter');
 const loadError=document.getElementById('loadError');
-const apiKeyInput=document.getElementById('apiKeyInput');
-const saveKeyBtn=document.getElementById('saveKeyBtn');
 let bibleData={};
-let GEMINI_KEY = localStorage.getItem("geminiKey") || "";
-
-// ✅ 自動載入已儲存的 Key
-if(GEMINI_KEY){ apiKeyInput.value="********"; }
-
-// ✅ 儲存 API Key
-saveKeyBtn.onclick=()=>{
-  if(apiKeyInput.value && apiKeyInput.value!=="********"){
-    localStorage.setItem("geminiKey", apiKeyInput.value);
-    GEMINI_KEY=apiKeyInput.value;
-    alert("✅ API Key 已儲存！");
-  }
-};
 
 // ✅ 解析 TXT
 function parseBibleTXT(text){
@@ -143,16 +128,16 @@ function showChapter(){
 prevBtn.onclick=()=>{if(chapterSelect.value){chapterSelect.value=parseInt(chapterSelect.value)-1;showChapter();}};
 nextBtn.onclick=()=>{if(chapterSelect.value){chapterSelect.value=parseInt(chapterSelect.value)+1;showChapter();}};
 
-// ✅ Gemini AI（修正 400 Bad Request）
+// ✅ Gemini AI（含長度限制避免 400）
 explainButton.onclick = async () => {
-  if (!GEMINI_KEY) {
-    alert("⚠️ 請先輸入你的 Gemini API Key！");
-    return;
-  }
   const b = bookSelect.value;
   const ch = chapterSelect.value;
-  const passage = bibleContentDiv.innerText;
+  let passage = bibleContentDiv.innerText;
   if (!b || !ch) return;
+
+  if (passage.length > 4000) {
+    passage = passage.substring(0, 4000) + " ...（內容已截斷）";
+  }
 
   loading.classList.remove("hidden");
   aiOutputDiv.textContent = "";
@@ -171,6 +156,8 @@ explainButton.onclick = async () => {
       body: JSON.stringify(payload)
     });
 
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
     const data = await res.json();
 
     if (data.candidates && data.candidates.length > 0) {
@@ -182,7 +169,7 @@ explainButton.onclick = async () => {
       aiOutputDiv.textContent = "⚠️ AI 沒有回覆，請檢查 API Key 或稍後再試。";
     }
   } catch (e) {
-    aiOutputDiv.textContent = "❌ AI 解釋失敗：" + e;
+    aiOutputDiv.textContent = "❌ AI 解釋失敗：" + e.message;
   }
 
   loading.classList.add("hidden");
