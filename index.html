@@ -11,28 +11,27 @@
     body { font-family: 'Inter', sans-serif; background:#f8f8f8; margin:0; }
     .no-scrollbar::-webkit-scrollbar { display:none; }
     #explainButton { font-size: 0.9rem; padding: 0.3rem 1rem; }
-    
-    /* ✅ 使用 svh 防止 Edge/Chrome 遮擋 */
+
+    /* ✅ 經文上半部（淺藍背景） */
     #bibleSection { background: #e6f0ff; height: 50svh; display:flex; flex-direction:column; padding: 12px; box-sizing:border-box; }
     #bibleContent { flex:1; overflow-y:auto; background:white; padding:12px; border-radius:8px; box-shadow: inset 0 0 3px rgba(0,0,0,0.1); }
-    
-    /* ✅ AI 區域統一邊框 */
-    #aiSection { background: #ffffff; height: 50svh; display:flex; flex-direction:column; padding:12px; box-sizing:border-box; }
+
+    /* ✅ AI 下半部（外框淺藍） */
+    #aiSection { background: #e6f0ff; height: 50svh; display:flex; flex-direction:column; padding:12px; box-sizing:border-box; }
     #aiOutput { flex:1; overflow-y:auto; background:white; padding:12px; border-radius:8px; box-shadow: inset 0 0 3px rgba(0,0,0,0.1); font-size:0.95rem; }
-    
+
     #versionTag { position: fixed; bottom: 2px; right: 6px; font-size: 0.7rem; color: gray; background: rgba(255,255,255,0.5); padding: 2px 4px; border-radius: 3px; }
   </style>
 </head>
 <body class="flex flex-col h-screen">
-
 <div class="flex-1 flex flex-col overflow-hidden">
 
-  <!-- 📖 Bible Section (上半部淺藍) -->
+  <!-- 📖 Bible Section -->
   <div id="bibleSection" class="shadow-md rounded-b-lg">
     <h1 class="text-2xl font-bold text-center mb-3 text-blue-700">📖 聖經閱讀器 + Gemini AI</h1>
     <div id="loadError" class="hidden bg-red-100 text-red-700 p-2 mb-2 rounded"></div>
 
-    <!-- ✅ 3 個下拉選單 -->
+    <!-- ✅ 下拉選單 -->
     <div class="grid grid-cols-3 gap-3 mb-3">
       <select id="bookSelect" class="p-3 border rounded-lg shadow-sm w-full">
         <option value="">請選擇書卷</option>
@@ -59,7 +58,7 @@
     </div>
   </div>
 
-  <!-- 🤖 AI Section (下半部白色) -->
+  <!-- 🤖 AI Section (淺藍背景 + 白色文字框) -->
   <div id="aiSection" class="rounded-t-lg shadow-md">
     <div id="aiOutput" class="no-scrollbar"></div>
     <div id="loadingIndicator" class="hidden text-center mt-1 text-blue-600 text-sm">🤔 AI 正在思考中...</div>
@@ -68,7 +67,7 @@
 </div>
 
 <!-- ✅ 版本號 -->
-<div id="versionTag">300725 1352</div>
+<div id="versionTag">AI解釋內容只供參考 300725 1356</div>
 
 <script type="module">
 // ✅ API Key
