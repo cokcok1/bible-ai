@@ -10,9 +10,8 @@
   <style>
     body { font-family: 'Inter', sans-serif; background:#f8f8f8; }
     .no-scrollbar::-webkit-scrollbar { display:none; }
-    h2.text-xl { font-size: 1rem; margin-bottom: 0.5rem; }
-    #explainButton { font-size: 0.9rem; padding: 0.4rem 1rem; }
-    #aiOutput { height: 33vh; max-height: 33vh; }
+    #explainButton { font-size: 1rem; padding: 0.5rem 1.2rem; }
+    #aiOutput { height: 40vh; max-height: 40vh; }
   </style>
 </head>
 <body class="flex flex-col h-screen">
@@ -44,9 +43,8 @@
 
   <!-- AI Section -->
   <div class="flex-1 flex flex-col bg-gray-100 p-4 mt-4 rounded-t-lg shadow-md overflow-hidden">
-    <h2 class="text-xl font-bold text-center mb-2 text-green-700">🤖 AI 聖經解釋</h2>
 
-    <button id="explainButton" class="mx-auto mb-2 bg-gradient-to-r from-green-500 to-green-700 text-white px-4 py-2 rounded shadow" disabled>解釋這一段聖經</button>
+    <button id="explainButton" class="mx-auto mb-2 bg-gradient-to-r from-green-500 to-green-700 text-white px-4 py-2 rounded shadow" disabled>AI解釋這段聖經</button>
 
     <div id="aiOutput" class="bg-white p-3 rounded-lg shadow-inner overflow-y-auto no-scrollbar text-base"></div>
 
@@ -151,13 +149,7 @@ explainButton.onclick = async () => {
     const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
     const payload = {
       contents: [
-        { parts: [{ text: `請用中文（繁體）詳細解釋聖經 ${b} 第${ch}章，並包含以下內容：
-1. 逐節經文的神學解釋
-2. 背景資料（歷史與文化背景）
-3. 相關聖經章節的交叉引用
-4. 出處：請提供你參考的經文或註釋來源
-經文如下：
-${passage}` }] }
+        { parts: [{ text: `請用中文（繁體）詳細解釋聖經 ${b} 第${ch}章，並包含逐節解釋、背景資料、交叉引用及出處：\n${passage}` }] }
       ]
     };
 
