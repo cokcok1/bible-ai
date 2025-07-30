@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>📖 聖經 AI 解釋 (Gemini)</title>
+  <title>📖 聖經 + AI 解釋 (Gemini)</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#2563eb">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -11,15 +11,16 @@
     body { font-family: 'Inter', sans-serif; background:#f8f8f8; }
     .no-scrollbar::-webkit-scrollbar { display:none; }
     #explainButton { font-size: 0.9rem; padding: 0.3rem 1rem; }
-    #aiOutput { height: 40vh; max-height: 40vh; }
-    #versionTag { position: fixed; bottom: 5px; right: 10px; font-size: 0.75rem; color: gray; }
+    #aiSection { flex-shrink: 0; background: #f1f1f1; padding: 5px 8px; }
+    #aiOutput { height: 30vh; max-height: 30vh; font-size: 0.95rem; }
+    #versionTag { position: fixed; bottom: 3px; right: 8px; font-size: 0.7rem; color: gray; }
   </style>
 </head>
 <body class="flex flex-col h-screen">
 <div class="flex-1 flex flex-col overflow-hidden">
 
   <!-- Bible Section -->
-  <div class="bg-white p-4 shadow-md rounded-b-lg flex-shrink-0">
+  <div class="bg-white p-4 shadow-md rounded-b-lg flex-grow">
     <h1 class="text-2xl font-bold text-center mb-4 text-blue-700">📖 聖經閱讀器 + Gemini AI</h1>
     <div id="loadError" class="hidden bg-red-100 text-red-700 p-2 mb-2 rounded"></div>
 
@@ -35,7 +36,7 @@
       </select>
     </div>
 
-    <!-- ✅ 將 AI 解釋按鈕放到下一章旁邊 -->
+    <!-- ✅ 將 AI 按鈕放到右側 -->
     <div class="flex justify-between items-center mb-1">
       <button id="prevChapter" class="bg-gray-300 px-3 py-1 rounded disabled:opacity-40" disabled>上一章</button>
       <div class="flex gap-2">
@@ -44,23 +45,23 @@
       </div>
     </div>
 
-    <div id="bibleContent" class="bg-gray-50 p-3 rounded-lg shadow-inner overflow-y-auto no-scrollbar text-lg leading-relaxed" style="max-height:40vh;">
+    <div id="bibleContent" class="bg-gray-50 p-3 rounded-lg shadow-inner overflow-y-auto no-scrollbar text-lg leading-relaxed" style="max-height:55vh;">
       📖 請先選擇書卷和章節來閱讀聖經。
     </div>
   </div>
 
-  <!-- AI Section（縮小上邊距） -->
-  <div class="flex-1 flex flex-col bg-gray-100 p-3 rounded-t-lg shadow-md overflow-hidden">
-    <div id="aiOutput" class="bg-white p-3 rounded-lg shadow-inner overflow-y-auto no-scrollbar text-base"></div>
-    <div id="loadingIndicator" class="hidden text-center mt-2 text-blue-600 font-medium">🤔 AI 正在思考中...</div>
+  <!-- ✅ AI Section 最小化 -->
+  <div id="aiSection" class="flex flex-col rounded-t-lg shadow-md overflow-hidden">
+    <div id="aiOutput" class="bg-white p-2 rounded-lg shadow-inner overflow-y-auto no-scrollbar"></div>
+    <div id="loadingIndicator" class="hidden text-center mt-1 text-blue-600 text-sm">🤔 AI 正在思考中...</div>
   </div>
 </div>
 
 <!-- ✅ 右下角版本號 -->
-<div id="versionTag">300725 1219</div>
+<div id="versionTag">300725 1228</div>
 
 <script type="module">
-// ✅ 使用 gemini-2.0-flash
+// ✅ API Key & 變數
 const GEMINI_KEY = "AIzaSyBURyCnTRY5pO0OZjyMRI37jYEU_tWShhg";
 
 const bookSelect=document.getElementById('bookSelect');
@@ -173,7 +174,7 @@ explainButton.onclick = async () => {
     const target = v ? `第${v}節` : `第${ch}章`;
     const payload = {
       contents: [
-        { parts: [{ text: `請用中文（繁體）詳細解釋聖經 ${b} ${target}，並包含解釋、經文結構與主題、背景資料、引用及出處應用、反思與默想問題：\n${passage}` }] }
+        { parts: [{ text: `請用中文（繁體）詳細解釋聖經 ${b} ${target}，包含解釋、經文主題、背景資料、交叉引用、出處與反思問題：\n${passage}` }] }
       ]
     };
 
