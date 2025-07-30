@@ -11,8 +11,9 @@
     body { font-family: 'Inter', sans-serif; background:#f8f8f8; }
     .no-scrollbar::-webkit-scrollbar { display:none; }
     #explainButton { font-size: 0.9rem; padding: 0.3rem 1rem; }
-    #bibleContent { height: 50vh; max-height: 50vh; }
-    #aiSection { background: #f1f1f1; height: 50vh; padding: 5px 8px; flex-shrink: 0; }
+    #bibleSection { background: #e6f0ff; height: 50vh; }
+    #bibleContent { height: calc(50vh - 130px); max-height: calc(50vh - 130px); }
+    #aiSection { background: #ffffff; height: 50vh; padding: 5px 8px; flex-shrink: 0; }
     #aiOutput { height: 44vh; max-height: 44vh; font-size: 0.95rem; }
     #versionTag { position: fixed; bottom: 2px; right: 6px; font-size: 0.7rem; color: gray; background: rgba(255,255,255,0.5); padding: 2px 4px; border-radius: 3px; }
   </style>
@@ -20,24 +21,25 @@
 <body class="flex flex-col h-screen">
 <div class="flex-1 flex flex-col overflow-hidden">
 
-  <!-- Bible Section (50%) -->
-  <div class="bg-white p-4 shadow-md rounded-b-lg flex-shrink-0" style="height:50vh;">
+  <!-- Bible Section (淺藍背景) -->
+  <div id="bibleSection" class="p-4 shadow-md rounded-b-lg flex-shrink-0">
     <h1 class="text-2xl font-bold text-center mb-4 text-blue-700">📖 聖經閱讀器 + Gemini AI</h1>
     <div id="loadError" class="hidden bg-red-100 text-red-700 p-2 mb-2 rounded"></div>
 
-    <div class="flex gap-3 mb-3">
-      <select id="bookSelect" class="flex-1 p-3 border rounded-lg shadow-sm">
+    <!-- ✅ 三個下拉選單用 grid -->
+    <div class="grid grid-cols-3 gap-3 mb-3">
+      <select id="bookSelect" class="p-3 border rounded-lg shadow-sm w-full">
         <option value="">請選擇書卷</option>
       </select>
-      <select id="chapterSelect" class="flex-1 p-3 border rounded-lg shadow-sm" disabled>
+      <select id="chapterSelect" class="p-3 border rounded-lg shadow-sm w-full" disabled>
         <option value="">請選擇章節</option>
       </select>
-      <select id="verseSelect" class="flex-1 p-3 border rounded-lg shadow-sm" disabled>
+      <select id="verseSelect" class="p-3 border rounded-lg shadow-sm w-full" disabled>
         <option value="">全部經文</option>
       </select>
     </div>
 
-    <!-- ✅ AI 按鈕與導航 -->
+    <!-- ✅ 導航與 AI 按鈕 -->
     <div class="flex justify-between items-center mb-1">
       <button id="prevChapter" class="bg-gray-300 px-3 py-1 rounded disabled:opacity-40" disabled>上一章</button>
       <div class="flex gap-2">
@@ -46,12 +48,12 @@
       </div>
     </div>
 
-    <div id="bibleContent" class="bg-gray-50 p-3 rounded-lg shadow-inner overflow-y-auto no-scrollbar text-lg leading-relaxed">
+    <div id="bibleContent" class="bg-white p-3 rounded-lg shadow-inner overflow-y-auto no-scrollbar text-lg leading-relaxed">
       📖 請先選擇書卷和章節來閱讀聖經。
     </div>
   </div>
 
-  <!-- AI Section (50%) -->
+  <!-- AI Section (白色背景) -->
   <div id="aiSection" class="flex flex-col rounded-t-lg shadow-md overflow-hidden">
     <div id="aiOutput" class="bg-white p-2 rounded-lg shadow-inner overflow-y-auto no-scrollbar"></div>
     <div id="loadingIndicator" class="hidden text-center mt-1 text-blue-600 text-sm">🤔 AI 正在思考中...</div>
@@ -59,7 +61,7 @@
 </div>
 
 <!-- ✅ 版本號 -->
-<div id="versionTag">AI解釋內容只供參考 300725 1234</div>
+<div id="versionTag">300725 1340</div>
 
 <script type="module">
 // ✅ API Key
@@ -175,7 +177,7 @@ explainButton.onclick = async () => {
     const target = v ? `第${v}節` : `第${ch}章`;
     const payload = {
       contents: [
-        { parts: [{ text: `請用中文（繁體）詳細解釋聖經 ${b} ${target}，包含解釋、經文主題、背景資料、引用、出處與反思問題：\n${passage}` }] }
+        { parts: [{ text: `請用中文（繁體）詳細解釋聖經 ${b} ${target}，包含解釋、經文主題、背景資料、交叉引用、出處與反思問題：\n${passage}` }] }
       ]
     };
 
