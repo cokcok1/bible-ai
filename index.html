@@ -10,8 +10,9 @@
   <style>
     body { font-family: 'Inter', sans-serif; background:#f8f8f8; }
     .no-scrollbar::-webkit-scrollbar { display:none; }
-    #explainButton { font-size: 1rem; padding: 0.5rem 1.2rem; }
+    #explainButton { font-size: 0.9rem; padding: 0.3rem 1rem; }
     #aiOutput { height: 40vh; max-height: 40vh; }
+    #versionTag { position: fixed; bottom: 5px; right: 10px; font-size: 0.75rem; color: gray; }
   </style>
 </head>
 <body class="flex flex-col h-screen">
@@ -19,7 +20,7 @@
 
   <!-- Bible Section -->
   <div class="bg-white p-4 shadow-md rounded-b-lg flex-shrink-0">
-    <h1 class="text-2xl font-bold text-center mb-4 text-blue-700">📖 聖經閱讀器 + Gemini AI 300725 1209</h1>
+    <h1 class="text-2xl font-bold text-center mb-4 text-blue-700">📖 聖經閱讀器 + Gemini AI</h1>
     <div id="loadError" class="hidden bg-red-100 text-red-700 p-2 mb-2 rounded"></div>
 
     <div class="flex gap-3 mb-3">
@@ -34,26 +35,32 @@
       </select>
     </div>
 
-    <div class="flex justify-between mb-2">
+    <!-- ✅ 將 AI 解釋按鈕放到下一章旁邊 -->
+    <div class="flex justify-between items-center mb-1">
       <button id="prevChapter" class="bg-gray-300 px-3 py-1 rounded disabled:opacity-40" disabled>上一章</button>
-      <button id="nextChapter" class="bg-gray-300 px-3 py-1 rounded disabled:opacity-40" disabled>下一章</button>
+      <div class="flex gap-2">
+        <button id="nextChapter" class="bg-gray-300 px-3 py-1 rounded disabled:opacity-40" disabled>下一章</button>
+        <button id="explainButton" class="bg-gradient-to-r from-green-500 to-green-700 text-white rounded shadow disabled:opacity-40" disabled>AI解釋這段聖經</button>
+      </div>
     </div>
 
-    <div id="bibleContent" class="bg-gray-50 p-4 rounded-lg shadow-inner overflow-y-auto no-scrollbar text-lg leading-relaxed" style="max-height:40vh;">
+    <div id="bibleContent" class="bg-gray-50 p-3 rounded-lg shadow-inner overflow-y-auto no-scrollbar text-lg leading-relaxed" style="max-height:40vh;">
       📖 請先選擇書卷和章節來閱讀聖經。
     </div>
   </div>
 
-  <!-- AI Section -->
-  <div class="flex-1 flex flex-col bg-gray-100 p-4 mt-4 rounded-t-lg shadow-md overflow-hidden">
-    <button id="explainButton" class="mx-auto mb-2 bg-gradient-to-r from-green-500 to-green-700 text-white px-4 py-2 rounded shadow" disabled>AI解釋這段聖經</button>
+  <!-- AI Section（縮小上邊距） -->
+  <div class="flex-1 flex flex-col bg-gray-100 p-3 rounded-t-lg shadow-md overflow-hidden">
     <div id="aiOutput" class="bg-white p-3 rounded-lg shadow-inner overflow-y-auto no-scrollbar text-base"></div>
     <div id="loadingIndicator" class="hidden text-center mt-2 text-blue-600 font-medium">🤔 AI 正在思考中...</div>
   </div>
 </div>
 
+<!-- ✅ 右下角版本號 -->
+<div id="versionTag">300725 1219</div>
+
 <script type="module">
-// ✅ 直接寫死 API Key
+// ✅ 使用 gemini-2.0-flash
 const GEMINI_KEY = "AIzaSyBURyCnTRY5pO0OZjyMRI37jYEU_tWShhg";
 
 const bookSelect=document.getElementById('bookSelect');
@@ -116,7 +123,7 @@ bookSelect.addEventListener('change',()=>{
   });
 });
 
-// ✅ 選章節 → 顯示整章 + 生成節選單
+// ✅ 選章節 → 生成節選單 + 顯示整章
 chapterSelect.addEventListener('change',()=>{
   const b=bookSelect.value;const ch=chapterSelect.value;
   if(!b||!ch)return;
@@ -149,7 +156,7 @@ function showChapter(){
 prevBtn.onclick=()=>{chapterSelect.value=parseInt(chapterSelect.value)-1;verseSelect.value="";showChapter();};
 nextBtn.onclick=()=>{chapterSelect.value=parseInt(chapterSelect.value)+1;verseSelect.value="";showChapter();};
 
-// ✅ Gemini AI（含節判斷）
+// ✅ Gemini AI
 explainButton.onclick = async () => {
   const b = bookSelect.value;
   const ch = chapterSelect.value;
