@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>📖 聖經 AI 解釋 (Gemini 直連版)</title>
+  <title>📖 聖經 AI 解釋 (Gemini + 節選擇)</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#2563eb">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -29,6 +29,9 @@
       <select id="chapterSelect" class="flex-1 p-3 border rounded-lg shadow-sm" disabled>
         <option value="">請選擇章節</option>
       </select>
+      <select id="verseSelect" class="flex-1 p-3 border rounded-lg shadow-sm" disabled>
+        <option value="">全部經文</option>
+      </select>
     </div>
 
     <div class="flex justify-between mb-2">
@@ -43,21 +46,19 @@
 
   <!-- AI Section -->
   <div class="flex-1 flex flex-col bg-gray-100 p-4 mt-4 rounded-t-lg shadow-md overflow-hidden">
-
     <button id="explainButton" class="mx-auto mb-2 bg-gradient-to-r from-green-500 to-green-700 text-white px-4 py-2 rounded shadow" disabled>AI解釋這段聖經</button>
-
     <div id="aiOutput" class="bg-white p-3 rounded-lg shadow-inner overflow-y-auto no-scrollbar text-base"></div>
-
     <div id="loadingIndicator" class="hidden text-center mt-2 text-blue-600 font-medium">🤔 AI 正在思考中...</div>
   </div>
 </div>
 
 <script type="module">
-// ✅ 直接寫死 API Key（⚠️ 請換成你的 Key）
+// ✅ 直接寫死 API Key
 const GEMINI_KEY = "AIzaSyBURyCnTRY5pO0OZjyMRI37jYEU_tWShhg";
 
 const bookSelect=document.getElementById('bookSelect');
 const chapterSelect=document.getElementById('chapterSelect');
+const verseSelect=document.getElementById('verseSelect');
 const bibleContentDiv=document.getElementById('bibleContent');
 const aiOutputDiv=document.getElementById('aiOutput');
 const explainButton=document.getElementById('explainButton');
@@ -76,8 +77,8 @@ function parseBibleTXT(text){
     if(m){
       const[_,book,ch,vs,ct]=m;
       data[book]=data[book]||{};
-      data[book][ch]=data[book][ch]||[];
-      data[book][ch].push(`${vs} ${ct}`);
+      data[book][ch]=data[book][ch]||{};
+      data[book][ch][vs]=`${vs} ${ct}`;
     }
   });
   return data;
@@ -90,7 +91,6 @@ async function loadBible(){
     if(!res.ok) throw new Error(`HTTP ${res.status}`);
     const raw=await res.text();
     bibleData=parseBibleTXT(raw);
-    if(Object.keys(bibleData).length===0) throw new Error("TXT 格式錯誤或為空");
     for(const b in bibleData){let o=document.createElement('option');o.value=b;o.textContent=b;bookSelect.appendChild(o);}
   }catch(e){
     loadError.textContent="❌ 聖經載入失敗："+e.message;
@@ -103,7 +103,9 @@ loadBible();
 bookSelect.addEventListener('change',()=>{
   const b=bookSelect.value;
   chapterSelect.innerHTML='<option value="">請選擇章節</option>';
+  verseSelect.innerHTML='<option value="">全部經文</option>';
   bibleContentDiv.textContent="📖 請選擇章節";
+  verseSelect.disabled=true;
   explainButton.disabled=true;
   if(!b){chapterSelect.disabled=true;return;}
   chapterSelect.disabled=false;
@@ -114,42 +116,57 @@ bookSelect.addEventListener('change',()=>{
   });
 });
 
-// ✅ 顯示章節
-chapterSelect.addEventListener('change',()=>showChapter());
-function showChapter(){
+// ✅ 選章節 → 顯示整章 + 生成節選單
+chapterSelect.addEventListener('change',()=>{
   const b=bookSelect.value;const ch=chapterSelect.value;
-  if(!b||!ch){
-    bibleContentDiv.textContent="📖 請選擇書卷和章節";
-    explainButton.disabled=true;
-    return;
+  if(!b||!ch)return;
+  verseSelect.innerHTML='<option value="">全部經文</option>';
+  Object.keys(bibleData[b][ch]).forEach(v=>{
+    let o=document.createElement('option');
+    o.value=v;o.textContent=`第${v}節`;
+    verseSelect.appendChild(o);
+  });
+  verseSelect.disabled=false;
+  showChapter();
+});
+
+// ✅ 選節 → 顯示該節或整章
+verseSelect.addEventListener('change',()=>showChapter());
+
+// ✅ 顯示章節/節
+function showChapter(){
+  const b=bookSelect.value;const ch=chapterSelect.value;const v=verseSelect.value;
+  if(!b||!ch){bibleContentDiv.textContent="📖 請選擇書卷和章節";return;}
+  if(v){
+    bibleContentDiv.innerHTML=`<p>${bibleData[b][ch][v]}</p>`;
+  }else{
+    bibleContentDiv.innerHTML=Object.values(bibleData[b][ch]).map(t=>`<p>${t}</p>`).join('');
   }
-  bibleContentDiv.innerHTML=bibleData[b][ch].map(v=>`<p>${v}</p>`).join('');
   explainButton.disabled=false;
   prevBtn.disabled=!bibleData[b][parseInt(ch)-1];
   nextBtn.disabled=!bibleData[b][parseInt(ch)+1];
 }
-prevBtn.onclick=()=>{if(chapterSelect.value){chapterSelect.value=parseInt(chapterSelect.value)-1;showChapter();}};
-nextBtn.onclick=()=>{if(chapterSelect.value){chapterSelect.value=parseInt(chapterSelect.value)+1;showChapter();}};
+prevBtn.onclick=()=>{chapterSelect.value=parseInt(chapterSelect.value)-1;verseSelect.value="";showChapter();};
+nextBtn.onclick=()=>{chapterSelect.value=parseInt(chapterSelect.value)+1;verseSelect.value="";showChapter();};
 
-// ✅ Gemini AI（含長度限制避免 400）
+// ✅ Gemini AI（含節判斷）
 explainButton.onclick = async () => {
   const b = bookSelect.value;
   const ch = chapterSelect.value;
+  const v = verseSelect.value;
   let passage = bibleContentDiv.innerText;
   if (!b || !ch) return;
-
-  if (passage.length > 4000) {
-    passage = passage.substring(0, 4000) + " ...（內容已截斷）";
-  }
+  if (passage.length > 4000) passage = passage.substring(0, 4000) + " ...（內容已截斷）";
 
   loading.classList.remove("hidden");
   aiOutputDiv.textContent = "";
 
   try {
     const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
+    const target = v ? `第${v}節` : `第${ch}章`;
     const payload = {
       contents: [
-        { parts: [{ text: `請用中文（繁體）詳細解釋聖經 ${b} 第${ch}章，並包含逐節解釋、背景資料、交叉引用及出處：\n${passage}` }] }
+        { parts: [{ text: `請用中文（繁體）詳細解釋聖經 ${b} ${target}，並包含逐節解釋、背景資料、交叉引用及出處：\n${passage}` }] }
       ]
     };
 
@@ -160,21 +177,13 @@ explainButton.onclick = async () => {
     });
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
     const data = await res.json();
 
-    if (data.candidates && data.candidates.length > 0) {
-      aiOutputDiv.innerHTML = data.candidates[0].content.parts
-        .map(p => p.text)
-        .join("\n")
-        .replace(/\n/g, "<br>");
-    } else {
-      aiOutputDiv.textContent = "⚠️ AI 沒有回覆，請檢查 API Key 或稍後再試。";
-    }
+    aiOutputDiv.innerHTML = data.candidates?.[0]?.content?.parts?.map(p => p.text).join("\n").replace(/\n/g,"<br>") 
+      || "⚠️ AI 沒有回覆，請檢查 API Key 或稍後再試。";
   } catch (e) {
     aiOutputDiv.textContent = "❌ AI 解釋失敗：" + e.message;
   }
-
   loading.classList.add("hidden");
 };
 </script>
